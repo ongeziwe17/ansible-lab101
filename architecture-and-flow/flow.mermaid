@@ -1,0 +1,61 @@
+flowchart TD
+    USER["DevOps Engineer"]
+
+    PLAYBOOK["Ansible Playbook<br/>site.yml"]
+
+    INVENTORY["Inventory<br/>inventory.ini"]
+
+    CONFIG["ansible.cfg"]
+
+    CONTROLLER["Ansible Controller"]
+
+    PARSE["Ansible Reads<br/>Playbook + Inventory + Config"]
+
+    SSH["Establish SSH Connection<br/>as devops user"]
+
+    AUTH["Authenticate<br/>SSH Key / Password"]
+
+    PYTHON["Execute Ansible Module<br/>via Python 3"]
+
+    BECOME{"become: true?"}
+
+    SUDO["sudo<br/>Privilege Escalation"]
+
+    NORMAL["Run as devops"]
+
+    NODE1["lin-node1"]
+    NODE2["lin-node2"]
+    NODE3["lin-node3"]
+
+    RESULT["Collect Results<br/>changed / ok / failed / skipped"]
+
+    OUTPUT["Display Play Recap"]
+
+    USER --> PLAYBOOK
+
+    PLAYBOOK --> CONTROLLER
+    INVENTORY --> CONTROLLER
+    CONFIG --> CONTROLLER
+
+    CONTROLLER --> PARSE
+
+    PARSE --> NODE1
+    PARSE --> NODE2
+    PARSE --> NODE3
+
+    NODE1 --> SSH
+    NODE2 --> SSH
+    NODE3 --> SSH
+
+    SSH --> AUTH
+    AUTH --> PYTHON
+
+    PYTHON --> BECOME
+
+    BECOME -->|"Yes"| SUDO
+    BECOME -->|"No"| NORMAL
+
+    SUDO --> RESULT
+    NORMAL --> RESULT
+
+    RESULT --> OUTPUT

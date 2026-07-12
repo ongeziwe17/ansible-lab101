@@ -1,0 +1,39 @@
+sequenceDiagram
+    actor Infrastructure as Infrastructure Engineer
+    participant Controller as ansible-controller
+    participant Inventory as Inventory
+    participant Node1 as lin-node1
+    participant Node2 as lin-node2
+    participant Node3 as lin-node3
+
+    Infrastructure->>Controller: ansible-playbook -i inventory.ini site.yml
+
+    Controller->>Inventory: Read managed hosts
+    Inventory-->>Controller: lin-node1, lin-node2, lin-node3
+
+    par Connect to lin-node1
+        Controller->>Node1: SSH as devops
+        Node1-->>Controller: SSH authenticated
+    and Connect to lin-node2
+        Controller->>Node2: SSH as devops
+        Node2-->>Controller: SSH authenticated
+    and Connect to lin-node3
+        Controller->>Node3: SSH as devops
+        Node3-->>Controller: SSH authenticated
+    end
+
+    Controller->>Node1: Transfer / execute Ansible module
+    Controller->>Node2: Transfer / execute Ansible module
+    Controller->>Node3: Transfer / execute Ansible module
+
+    opt become: true
+        Controller->>Node1: sudo privilege escalation
+        Controller->>Node2: sudo privilege escalation
+        Controller->>Node3: sudo privilege escalation
+    end
+
+    Node1-->>Controller: Task result
+    Node2-->>Controller: Task result
+    Node3-->>Controller: Task result
+
+    Controller-->>Infrastructure: PLAY RECAP<br/>ok / changed / failed / skipped
