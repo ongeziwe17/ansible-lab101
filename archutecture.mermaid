@@ -1,0 +1,34 @@
+flowchart LR
+    HOST["Developer Host<br/>Windows / WSL / Linux"]
+
+    GIT["Git Repository<br/>Ansible Playbooks<br/>Inventory<br/>Roles<br/>group_vars<br/>host_vars<br/>ansible.cfg"]
+
+    subgraph DOCKER["Docker Compose Lab"]
+
+        subgraph CONTROLLER["Ansible Controller"]
+            AC["ansible-controller"]
+            WORKSPACE["/workspace<br/>Bind Mount"]
+            SSHVOL["~/.ssh<br/>Docker Volume"]
+            ANSIBLE["Ansible"]
+            SSHCLIENT["OpenSSH Client"]
+
+            AC --> WORKSPACE
+            AC --> SSHVOL
+            AC --> ANSIBLE
+            AC --> SSHCLIENT
+        end
+
+        subgraph MANAGED["Managed Nodes"]
+            NODE1["lin-node1<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
+            NODE2["lin-node2<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
+            NODE3["lin-node3<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
+        end
+
+        ANSIBLE -->|"SSH"| NODE1
+        ANSIBLE -->|"SSH"| NODE2
+        ANSIBLE -->|"SSH"| NODE3
+    end
+
+    HOST --> GIT
+    GIT -->|"Bind Mount"| WORKSPACE
+    HOST -->|"docker compose up"| DOCKER

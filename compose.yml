@@ -1,0 +1,115 @@
+name: ansible-lab
+
+services:
+  ansible-controller:
+    build:
+      context: ./controller
+      dockerfile: Dockerfile
+      args:
+        DEVOPS_USER: ${DEVOPS_USER}
+        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD}
+
+    image: ansible-controller:lab
+    container_name: ansible-controller
+    hostname: ansible-controller
+
+    stdin_open: true
+    tty: true
+
+    working_dir: /workspace
+
+    volumes:
+      - ./ansible-playbooks:/workspace
+      - controller_ssh:/home/devops/.ssh
+
+    networks:
+      - ansible_lab
+
+
+  node-lin01:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+      args:
+        UBUNTU_VERSION: "20.04"
+        DEVOPS_USER: ${DEVOPS_USER}
+        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD}
+
+    image: ansible-node:20.04
+    container_name: node-lin01
+    hostname: node-lin01
+
+    ports:
+      - "2222:22"
+
+    networks:
+      - ansible_lab
+
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x sshd > /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+
+  node-lin02:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+      args:
+        UBUNTU_VERSION: "22.04"
+        DEVOPS_USER: ${DEVOPS_USER}
+        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD}
+
+    image: ansible-node:22.04
+    container_name: node-lin02
+    hostname: node-lin02
+
+    ports:
+      - "2223:22"
+
+    networks:
+      - ansible_lab
+
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x sshd > /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+
+  node-lin03:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+      args:
+        UBUNTU_VERSION: "24.04"
+        DEVOPS_USER: ${DEVOPS_USER}
+        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD}
+
+    image: ansible-node:24.04
+    container_name: node-lin03
+    hostname: node-lin03
+
+    ports:
+      - "2224:22"
+
+    networks:
+      - ansible_lab
+
+    healthcheck:
+      test: ["CMD-SHELL", "pgrep -x sshd > /dev/null"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+
+networks:
+  ansible_lab:
+    name: ansible_lab_net
+    driver: bridge
+
+
+volumes:
+  controller_ssh:
+    name: ansible_controller_ssh
