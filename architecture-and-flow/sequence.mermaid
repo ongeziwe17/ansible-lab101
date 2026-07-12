@@ -1,12 +1,12 @@
 sequenceDiagram
-    actor Infrastructure as Infrastructure Engineer
+    actor DevOps as DevOps Engineer
     participant Controller as ansible-controller
     participant Inventory as Inventory
     participant Node1 as lin-node1
     participant Node2 as lin-node2
     participant Node3 as lin-node3
 
-    Infrastructure->>Controller: ansible-playbook -i inventory.ini site.yml
+    DevOps->>Controller: ansible-playbook -i inventory.ini site.yml
 
     Controller->>Inventory: Read managed hosts
     Inventory-->>Controller: lin-node1, lin-node2, lin-node3
@@ -36,4 +36,4 @@ sequenceDiagram
     Node2-->>Controller: Task result
     Node3-->>Controller: Task result
 
-    Controller-->>Infrastructure: PLAY RECAP<br/>ok / changed / failed / skipped
+    Controller-->>DevOps: PLAY RECAP<br/>ok / changed / failed / skipped
