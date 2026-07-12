@@ -28,7 +28,7 @@ services:
 
   node-lin01:
     build:
-      context: ./node
+      context: ./nodes
       dockerfile: Dockerfile
       args:
         UBUNTU_VERSION: "20.04"
@@ -54,7 +54,7 @@ services:
 
   node-lin02:
     build:
-      context: ./node
+      context: ./nodes
       dockerfile: Dockerfile
       args:
         UBUNTU_VERSION: "22.04"
@@ -80,7 +80,7 @@ services:
 
   node-lin03:
     build:
-      context: ./node
+      context: ./nodes
       dockerfile: Dockerfile
       args:
         UBUNTU_VERSION: "24.04"
