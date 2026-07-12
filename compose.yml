@@ -42,7 +42,7 @@ services:
         DEVOPS_USER: ${DEVOPS_USER:-devops}
         DEVOPS_PASSWORD: ${DEVOPS_PASSWORD:-devops}
 
-    image: ansible-node:${UBUNTU_VERSION:-22.04}
+    image: ansible-node-lin-node1:${UBUNTU_VERSION:-22.04}
     container_name: lin-node1
     hostname: lin-node1
 
@@ -64,7 +64,7 @@ services:
         DEVOPS_USER: ${DEVOPS_USER:-devops}
         DEVOPS_PASSWORD: ${DEVOPS_PASSWORD:-devops}
 
-    image: ansible-node:${UBUNTU_VERSION:-22.04}
+    image: ansible-node-lin-node2:${UBUNTU_VERSION:-22.04}
     container_name: lin-node2
     hostname: lin-node2
 
@@ -82,7 +82,7 @@ services:
         DEVOPS_USER: ${DEVOPS_USER:-devops}
         DEVOPS_PASSWORD: ${DEVOPS_PASSWORD:-devops}
 
-    image: ansible-node:${UBUNTU_VERSION:-22.04}
+    image: ansible-node-lin-node3:${UBUNTU_VERSION:-22.04}
     container_name: lin-node3
     hostname: lin-node3
 

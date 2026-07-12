@@ -95,7 +95,7 @@ Check container state:
 docker compose ps
 ```
 
-Expected services are `ansible-controller`, `lin-node1`, `lin-node2`, and `lin-node3`. The node SSH ports are not published to the host because the controller reaches them by service name on the Docker network.
+Expected services are `ansible-controller`, `lin-node1`, `lin-node2`, and `lin-node3`. The node SSH ports are not published to the host because the controller reaches them by service name on the Docker network. Each node image uses a unique local tag so parallel Compose builds do not race while exporting the same image name.
 
 ## First-Time SSH Bootstrap
 
