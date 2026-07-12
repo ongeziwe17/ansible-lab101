@@ -4,18 +4,22 @@ ARG DEVOPS_USER
 ARG DEVOPS_PASSWORD
 
 ENV DEBIAN_FRONTEND=noninteractive
+ENV DEVOPS_USER=${DEVOPS_USER}
 
 RUN apt-get update \
     && apt-get install -y \
         ansible \
         git \
         openssh-client \
+        sshpass \
         sudo \
         python3 \
         iputils-ping \
         vim \
         nano \
         tree \
+        iproute2 \
+        dnsutils \
     && rm -rf /var/lib/apt/lists/*
 
 # Create DevOps user and configure password
@@ -43,8 +47,10 @@ RUN mkdir -p /workspace \
         "${DEVOPS_USER}:${DEVOPS_USER}" \
         /workspace
 
-USER ${DEVOPS_USER}
+COPY bin/controller-entrypoint.sh /usr/local/bin/controller-entrypoint.sh
+RUN chmod 755 /usr/local/bin/controller-entrypoint.sh
 
 WORKDIR /workspace
 
+ENTRYPOINT ["/usr/local/bin/controller-entrypoint.sh"]
 CMD ["sleep", "infinity"]
