@@ -48,9 +48,10 @@ RUN mkdir -p /workspace \
         /workspace
 
 COPY bin/controller-entrypoint.sh /usr/local/bin/controller-entrypoint.sh
-RUN chmod 755 /usr/local/bin/controller-entrypoint.sh
+RUN sed -i 's/\r$//' /usr/local/bin/controller-entrypoint.sh \
+    && chmod 755 /usr/local/bin/controller-entrypoint.sh
 
 WORKDIR /workspace
 
-ENTRYPOINT ["/usr/local/bin/controller-entrypoint.sh"]
+ENTRYPOINT ["bash", "/usr/local/bin/controller-entrypoint.sh"]
 CMD ["sleep", "infinity"]
