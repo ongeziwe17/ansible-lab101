@@ -1,394 +1,79 @@
 # Docker Compose Ansible Lab
 
-A lightweight local Ansible learning environment built using Docker Compose.
-
-The lab provides one dedicated **Ansible controller** and three disposable **Ubuntu managed nodes**. It is designed for practising Ansible concepts such as inventories, playbooks, roles, variables, SSH connectivity, privilege escalation, and multi-node configuration management without requiring multiple virtual machines.
-
-The controller acts as the Ansible control node, while the Ubuntu containers simulate remote Linux servers managed over SSH.
-
----
-
-## Project Overview
-
-The environment consists of:
-
-* `ansible-controller` — Ansible control node
-* `lin-node1` — Ubuntu managed node
-* `lin-node2` — Ubuntu managed node
-* `lin-node3` — Ubuntu managed node
-
-The Ansible controller contains the tools required to write and execute Ansible automation.
-
-The managed nodes run an SSH server and provide Python and `sudo`, allowing Ansible modules and privilege escalation to operate similarly to a standard Linux server.
-
-```text
-Developer Host
-      |
-      |
-      v
-Docker Compose
-      |
-      +----------------------+
-      |                      |
-      v                      |
-Ansible Controller           |
-      |                      |
-      | SSH                  |
-      |                      |
-      +----------+-----------+
-                 |
-       +---------+---------+
-       |         |         |
-       v         v         v
-   lin-node1 lin-node2 lin-node3
-```
-
----
-
-## Goals
-
-The purpose of this project is to provide a reusable Ansible lab for practising:
-
-* Ansible inventories
-* Playbooks and plays
-* Tasks and modules
-* Roles
-* Handlers
-* Variables
-* `group_vars`
-* `host_vars`
-* SSH authentication
-* Privilege escalation with `become`
-* Multi-node configuration management
-* Ansible troubleshooting
-* Idempotency
-* Linux automation
-
-The managed nodes are intentionally disposable.
-
-The Ansible configuration and controller SSH state are persisted independently from the managed containers.
-
----
+A lightweight local Ansible learning environment built with Docker Compose. The lab provides one **Ansible controller** and three disposable **Ubuntu managed nodes** so you can practise inventories, playbooks, roles, variables, SSH authentication, and `become` without managing virtual machines.
 
 ## Architecture
 
+* `ansible-controller` contains Ansible, Git, Python 3, an OpenSSH client, and common troubleshooting tools.
+* `lin-node1`, `lin-node2`, and `lin-node3` run `sshd`, Python 3, and `sudo`.
+* The Ansible project is bind-mounted from `./ansible-playbooks` into `/workspace` on the controller.
+* The controller SSH directory is stored in the `ansible_controller_ssh` Docker volume.
+* Managed nodes are disposable and keep no persistent lab state.
+
+```text
+Host / Git Repository
+        |
+        | bind mount: ./ansible-playbooks -> /workspace
+        v
+ansible-controller
+    /workspace
+    ~/.ssh [Docker volume]
+        |
+        | SSH over Docker network
+        v
++-----------+-----------+-----------+
+|           |           |           |
+v           v           v
+lin-node1   lin-node2   lin-node3
+```
+
 ```mermaid
 flowchart LR
-    HOST["Developer Host<br/>Windows / WSL / Linux"]
-
-    GIT["Git Repository<br/>Ansible Playbooks<br/>Inventory<br/>Roles<br/>group_vars<br/>host_vars<br/>ansible.cfg"]
-
-    subgraph DOCKER["Docker Compose Lab"]
-
-        subgraph CONTROLLER["Ansible Controller"]
-            AC["ansible-controller"]
-            WORKSPACE["/workspace<br/>Bind Mount"]
-            SSHVOL["~/.ssh<br/>Docker Volume"]
-            ANSIBLE["Ansible"]
-            SSHCLIENT["OpenSSH Client"]
-
-            AC --> WORKSPACE
-            AC --> SSHVOL
-            AC --> ANSIBLE
-            AC --> SSHCLIENT
-        end
-
-        subgraph MANAGED["Managed Nodes"]
-            NODE1["lin-node1<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
-            NODE2["lin-node2<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
-            NODE3["lin-node3<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
-        end
-
-        ANSIBLE -->|"SSH"| NODE1
-        ANSIBLE -->|"SSH"| NODE2
-        ANSIBLE -->|"SSH"| NODE3
-    end
-
-    HOST --> GIT
-    GIT -->|"Bind Mount"| WORKSPACE
-    HOST -->|"docker compose up"| DOCKER
+    HOST["Developer Host"] --> PROJECT["./ansible-playbooks"]
+    PROJECT -->|"bind mount"| WORKSPACE["ansible-controller:/workspace"]
+    SSHVOL["ansible_controller_ssh volume"] --> SSHDIR["ansible-controller:~/.ssh"]
+    CONTROLLER["ansible-controller<br/>Ansible + OpenSSH client"] -->|"SSH :22"| NODE1["lin-node1<br/>sshd + Python 3 + sudo"]
+    CONTROLLER -->|"SSH :22"| NODE2["lin-node2<br/>sshd + Python 3 + sudo"]
+    CONTROLLER -->|"SSH :22"| NODE3["lin-node3<br/>sshd + Python 3 + sudo"]
+    WORKSPACE --- CONTROLLER
+    SSHDIR --- CONTROLLER
 ```
-
-### Architecture Flow
-
-The project files remain on the developer host and are mounted into the Ansible controller at:
-
-```text
-/workspace
-```
-
-The controller uses SSH to connect to the managed nodes.
-
-```text
-Git / Host
-    |
-    |
-    v
-Ansible Project
-    |
-    | Bind Mount
-    v
-ansible-controller
-    |
-    | SSH
-    |
-    +-------------+-------------+
-    |             |             |
-    v             v             v
-lin-node1      lin-node2      lin-node3
-```
-
----
-
-## Persistence Model
-
-The project intentionally separates **persistent controller data** from **disposable managed nodes**.
-
-```text
-                        Git / Host
-                            |
-                            |
-                     ansible-playbooks
-                            |
-                            v
-                   ansible-controller
-                   /workspace [MOUNTED]
-                            |
-                   ~/.ssh [VOLUME]
-                            |
-                           SSH
-             +--------------+--------------+
-             |              |              |
-             v              v              v
-         lin-node1       lin-node2       lin-node3
-         disposable      disposable      disposable
-```
-
-The following data is persisted:
-
-* Ansible playbooks
-* Inventory
-* `ansible.cfg`
-* Roles
-* `group_vars`
-* `host_vars`
-* Controller SSH keys
-* Controller `known_hosts`
-
-The managed nodes can be deleted and recreated without losing the Ansible project or controller SSH configuration.
-
----
-
-## Ansible Execution Flow
-
-When an Ansible playbook is executed, the controller reads the project configuration and determines which managed nodes should receive the tasks.
-
-```mermaid
-flowchart TD
-    USER["DevOps Engineer"]
-
-    PLAYBOOK["Ansible Playbook<br/>site.yml"]
-
-    INVENTORY["Inventory<br/>inventory.ini"]
-
-    CONFIG["ansible.cfg"]
-
-    CONTROLLER["Ansible Controller"]
-
-    PARSE["Ansible Reads<br/>Playbook + Inventory + Config"]
-
-    SSH["Establish SSH Connection<br/>as devops user"]
-
-    AUTH["Authenticate<br/>SSH Key / Password"]
-
-    PYTHON["Execute Ansible Module<br/>via Python 3"]
-
-    BECOME{"become: true?"}
-
-    SUDO["sudo<br/>Privilege Escalation"]
-
-    NORMAL["Run as devops"]
-
-    NODE1["lin-node1"]
-    NODE2["lin-node2"]
-    NODE3["lin-node3"]
-
-    RESULT["Collect Results<br/>changed / ok / failed / skipped"]
-
-    OUTPUT["Display Play Recap"]
-
-    USER --> PLAYBOOK
-
-    PLAYBOOK --> CONTROLLER
-    INVENTORY --> CONTROLLER
-    CONFIG --> CONTROLLER
-
-    CONTROLLER --> PARSE
-
-    PARSE --> NODE1
-    PARSE --> NODE2
-    PARSE --> NODE3
-
-    NODE1 --> SSH
-    NODE2 --> SSH
-    NODE3 --> SSH
-
-    SSH --> AUTH
-    AUTH --> PYTHON
-
-    PYTHON --> BECOME
-
-    BECOME -->|"Yes"| SUDO
-    BECOME -->|"No"| NORMAL
-
-    SUDO --> RESULT
-    NORMAL --> RESULT
-
-    RESULT --> OUTPUT
-```
-
----
-
-## Playbook Execution Sequence
-
-For example:
-
-```bash
-ansible-playbook -i inventory.ini site.yml
-```
-
-The following sequence occurs:
-
-```mermaid
-sequenceDiagram
-    actor DevOps as DevOps Engineer
-    participant Controller as ansible-controller
-    participant Inventory as Inventory
-    participant Node1 as lin-node1
-    participant Node2 as lin-node2
-    participant Node3 as lin-node3
-
-    DevOps->>Controller: ansible-playbook -i inventory.ini site.yml
-
-    Controller->>Inventory: Read managed hosts
-    Inventory-->>Controller: lin-node1, lin-node2, lin-node3
-
-    par Connect to lin-node1
-        Controller->>Node1: SSH as devops
-        Node1-->>Controller: SSH authenticated
-    and Connect to lin-node2
-        Controller->>Node2: SSH as devops
-        Node2-->>Controller: SSH authenticated
-    and Connect to lin-node3
-        Controller->>Node3: SSH as devops
-        Node3-->>Controller: SSH authenticated
-    end
-
-    Controller->>Node1: Transfer / execute Ansible module
-    Controller->>Node2: Transfer / execute Ansible module
-    Controller->>Node3: Transfer / execute Ansible module
-
-    opt become: true
-        Controller->>Node1: sudo privilege escalation
-        Controller->>Node2: sudo privilege escalation
-        Controller->>Node3: sudo privilege escalation
-    end
-
-    Node1-->>Controller: Task result
-    Node2-->>Controller: Task result
-    Node3-->>Controller: Task result
-
-    Controller-->>DevOps: PLAY RECAP<br/>ok / changed / failed / skipped
-```
-
-At a high level:
-
-```text
-ansible-playbook
-       |
-       v
-Read Playbook
-       |
-       v
-Read Inventory
-       |
-       v
-Determine Target Hosts
-       |
-       v
-Connect via SSH
-       |
-       v
-Execute Ansible Module
-       |
-       v
-become: true?
-   |         |
-  Yes        No
-   |         |
-   v         v
- sudo      devops
-   |         |
-   +----+----+
-        |
-        v
- Collect Results
-        |
-        v
-   PLAY RECAP
-```
-
----
 
 ## Project Structure
 
-A recommended project structure is:
-
 ```text
-ansible-lab/
-├── .env
-├── compose.yaml
+ansible-lab101/
+├── .env.example
+├── .gitignore
+├── compose.yml
 ├── README.md
-│
+├── architecture-and-flow/
+│   ├── archutecture.mermaid
+│   ├── flow.mermaid
+│   └── sequence.mermaid
 ├── controller/
+│   ├── Dockerfile
+│   └── bin/controller-entrypoint.sh
+├── nodes/
 │   └── Dockerfile
-│
-├── managed-node/
-│   └── Dockerfile
-│
 └── ansible-playbooks/
     ├── ansible.cfg
     ├── inventory.ini
     ├── site.yml
-    │
-    ├── group_vars/
-    │   └── all.yml
-    │
-    ├── host_vars/
-    │   ├── lin-node1.yml
-    │   ├── lin-node2.yml
-    │   └── lin-node3.yml
-    │
+    ├── group_vars/all.yml
+    ├── host_vars/lin-node1.yml
+    ├── host_vars/lin-node2.yml
+    ├── host_vars/lin-node3.yml
     └── roles/
 ```
 
-The `ansible-playbooks` directory is mounted into the controller:
-
-```text
-Host                            Controller
-
-ansible-playbooks/   ------->   /workspace
-```
-
-Changes made to the Ansible files on the host are immediately available inside the controller container.
-
----
-
 ## Environment Variables
 
-The project uses a `.env` file for lab configuration.
+Copy the example file and adjust values if desired:
 
-Example:
+```bash
+cp .env.example .env
+```
 
 ```env
 DEVOPS_USER=devops
@@ -396,356 +81,161 @@ DEVOPS_PASSWORD=devops
 UBUNTU_VERSION=22.04
 ```
 
-Docker Compose passes these values to the Docker image builds as build arguments.
-
-```text
-.env
- |
- v
-Docker Compose
- |
- v
-build.args
- |
- v
-Dockerfile ARG
- |
- v
-Linux User Configuration
-```
-
-The credentials are intended for local lab use only.
-
-Do not use the default lab credentials in production environments.
-
----
-
-## Controller
-
-The Ansible controller includes:
-
-* Ansible
-* Git
-* OpenSSH client
-* Python 3
-* `sudo`
-* `ping`
-* Vim
-* Nano
-* Tree
-
-The controller runs as the configured DevOps user.
-
-Example:
-
-```text
-devops@ansible-controller:/workspace$
-```
-
-The `/workspace` directory contains the mounted Ansible project.
-
----
-
-## Managed Nodes
-
-Each managed node includes:
-
-* OpenSSH server
-* Python 3
-* `sudo`
-* CA certificates
-* `iproute2`
-* `ping`
-* Process utilities
-
-The SSH daemon listens on port `22`.
-
-The configured DevOps user can authenticate over SSH and use `sudo`.
-
-```text
-Ansible Controller
-       |
-       | SSH :22
-       v
-Managed Node
-       |
-       v
-devops user
-       |
-       | become: true
-       v
-sudo
-       |
-       v
-root privileges
-```
-
-Ansible itself is not installed on the managed nodes.
-
-Ansible runs on the controller and remotely executes modules on the managed systems.
-
----
+Compose passes these values as Docker build arguments. The password is intentionally simple for a local learning lab. Do not copy this secret handling model into production: build arguments and lab passwords can appear in local image metadata/history and are not a production secret-management mechanism.
 
 ## Start the Lab
-
-Build and start the environment:
 
 ```bash
 docker compose up -d --build
 ```
 
-Check the containers:
+Check container state:
 
 ```bash
 docker compose ps
 ```
 
-Expected services:
+Expected services are `ansible-controller`, `lin-node1`, `lin-node2`, and `lin-node3`. The node SSH ports are not published to the host because the controller reaches them by service name on the Docker network.
 
-```text
-ansible-controller
-lin-node1
-lin-node2
-lin-node3
-```
+## First-Time SSH Bootstrap
 
----
-
-## Access the Ansible Controller
-
-Open a shell inside the controller:
+Enter the controller as the DevOps user:
 
 ```bash
-docker compose exec ansible-controller bash
+docker compose exec --user devops ansible-controller bash
 ```
 
-You should enter the container as the DevOps user:
-
-```text
-devops@ansible-controller:/workspace$
-```
-
----
-
-## Verify Managed Nodes
-
-From the controller, verify DNS resolution:
+Generate a persistent SSH key if one does not already exist:
 
 ```bash
-ping lin-node1
-ping lin-node2
-ping lin-node3
+ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
 ```
 
-Test SSH connectivity:
+Copy the public key to each disposable managed node. The initial password is `DEVOPS_PASSWORD` from `.env`:
 
 ```bash
-ssh devops@lin-node1
+for host in lin-node1 lin-node2 lin-node3; do
+  ssh-copy-id "devops@${host}"
+done
 ```
 
-The initial lab password is configured through:
-
-```env
-DEVOPS_PASSWORD=devops
-```
-
----
-
-## Generate Controller SSH Keys
-
-Inside the Ansible controller:
+Test key authentication and accept/save host keys in the persistent `known_hosts` file:
 
 ```bash
-ssh-keygen -t ed25519
+for host in lin-node1 lin-node2 lin-node3; do
+  ssh "devops@${host}" 'python3 --version && sudo -S -v'
+done
 ```
 
-The generated keys are stored under:
+The controller entrypoint repairs ownership and permissions on the mounted `~/.ssh` volume at startup. This avoids a common named-volume issue where a mount can hide image-built directory metadata or retain incorrect ownership from an earlier container.
 
-```text
-/home/devops/.ssh
-```
+## Ansible Usage
 
-The SSH directory is persisted using a Docker volume.
+The repository includes a starter Ansible project in `ansible-playbooks/`. `group_vars/all.yml` derives `ansible_user` from the controller `DEVOPS_USER` environment variable and sets `/usr/bin/python3` as the remote interpreter.
 
-This means the controller SSH keys remain available when the controller container is recreated.
-
----
-
-## Test Ansible Connectivity
-
-Example inventory:
+Inventory:
 
 ```ini
 [linux_nodes]
 lin-node1
 lin-node2
 lin-node3
-
-[linux_nodes:vars]
-ansible_user=devops
 ```
 
-Run an Ansible ping test:
+Run an Ansible ping after SSH key bootstrap:
 
 ```bash
-ansible all -i inventory.ini -m ping
+ansible all -m ping
 ```
 
-Expected output:
-
-```text
-lin-node1 | SUCCESS => {
-    "ping": "pong"
-}
-
-lin-node2 | SUCCESS => {
-    "ping": "pong"
-}
-
-lin-node3 | SUCCESS => {
-    "ping": "pong"
-}
-```
-
----
-
-## Example Playbook
-
-Create a `site.yml` file:
-
-```yaml
----
-- name: Configure Linux managed nodes
-  hosts: linux_nodes
-  become: true
-
-  tasks:
-    - name: Install Nginx
-      ansible.builtin.apt:
-        name: nginx
-        state: present
-        update_cache: true
-```
-
-Run the playbook:
+Run the example playbook, which verifies Python and sudo/become behavior:
 
 ```bash
-ansible-playbook -i inventory.ini site.yml
+ansible-playbook site.yml
 ```
 
-Ansible connects to all three nodes and applies the desired configuration.
+`ansible.cfg` keeps host key checking enabled and prompts for the become password. This is intentional: the lab teaches explicit SSH trust and password-backed sudo rather than hiding those concepts with insecure defaults such as global host-key bypass or `NOPASSWD` sudo.
 
----
+## Persistence and Disposal
 
-## Stop the Lab
+Persisted:
 
-Stop the containers:
+* `ansible-playbooks/` on the host, mounted at `/workspace`
+* Controller SSH keys and `known_hosts` in the `ansible_controller_ssh` Docker volume
+
+Disposable:
+
+* `lin-node1`, `lin-node2`, and `lin-node3` containers
+* Managed-node SSH host keys and authorized keys
+
+Stop/start containers without deleting them:
 
 ```bash
 docker compose stop
-```
-
-Restart the lab:
-
-```bash
 docker compose start
 ```
 
----
-
-## Recreate Managed Nodes
-
-The managed nodes are disposable.
-
-Remove the environment:
+Recreate containers while keeping the controller SSH volume:
 
 ```bash
 docker compose down
-```
-
-Recreate it:
-
-```bash
 docker compose up -d --build
 ```
 
-The Ansible project remains on the host.
-
-The controller SSH volume remains available unless Docker volumes are explicitly removed.
-
-To remove the Docker volumes as well:
+Remove all lab containers and the persisted controller SSH volume:
 
 ```bash
 docker compose down -v
 ```
 
-> Running `docker compose down -v` removes the persisted controller SSH volume.
+> Warning: `docker compose down -v` deletes the persisted controller SSH keys and `known_hosts`.
 
----
+## Security Notes
 
-## Lab Design Philosophy
+This is a local learning lab, not a production platform.
 
-This environment intentionally follows a control-node and managed-node model similar to a real Ansible environment.
+Acceptable local-lab simplifications:
 
-```text
-Production Concept             Lab Equivalent
+* Password authentication is enabled on managed nodes for first-time key bootstrap.
+* A simple DevOps password can be stored in local `.env`.
+* Sudo requires the lab password and is granted through `/etc/sudoers.d/` for the configured user.
 
-Control Node            --->   ansible-controller
-Linux Servers           --->   lin-node1..3
-SSH                     --->   Docker network + SSH
-Git Repository          --->   ansible-playbooks
-Persistent Project      --->   Bind Mount
-SSH Identity            --->   Docker Volume
-Server Rebuild          --->   Container Recreation
+Do not copy to production:
+
+* Building images with passwords as Docker build arguments.
+* Enabling SSH password authentication broadly.
+* Using shared, simple lab credentials.
+
+Root SSH login is disabled on managed nodes, and node port `22` is only exposed inside the Docker network.
+
+## Useful Commands
+
+Validate Compose:
+
+```bash
+docker compose config
 ```
 
-The goal is not to perfectly simulate production infrastructure.
+Build images:
 
-The goal is to provide a fast, reusable environment for understanding how Ansible communicates with and configures Linux systems.
+```bash
+docker compose build
+```
 
----
+Verify controller-to-node DNS from the controller:
 
-## Technologies
+```bash
+for host in lin-node1 lin-node2 lin-node3; do getent hosts "$host"; done
+```
 
-* Docker
-* Docker Compose
-* Ubuntu
-* Ansible
-* OpenSSH
-* Python
-* Linux
-* Git
+Run a one-off password-based Ansible ping before SSH key bootstrap:
 
----
+```bash
+ansible all -m ping -e ansible_password=devops
+```
 
-## Future Lab Exercises
+Run the example playbook with explicit password variables for non-interactive testing:
 
-Possible exercises for this environment include:
-
-* Configure SSH key authentication
-* Disable password authentication
-* Create users with Ansible
-* Manage Linux packages
-* Configure Nginx
-* Deploy configuration files
-* Use handlers to restart services
-* Create reusable Ansible roles
-* Configure `group_vars`
-* Configure `host_vars`
-* Use Ansible Vault
-* Implement loops and conditionals
-* Use templates with Jinja2
-* Practise Ansible tags
-* Test idempotency
-* Simulate failed managed nodes
-* Explore Ansible forks and parallel execution
-* Use dynamic inventories
-* Configure multiple Linux distributions
-
----
-
-## Disclaimer
-
-This project is intended for local development and learning purposes.
-
-The credentials and SSH configuration used in this lab are intentionally simplified and should not be used as production security practices.
+```bash
+ansible-playbook site.yml -e ansible_password=devops -e ansible_become_password=devops
+```
