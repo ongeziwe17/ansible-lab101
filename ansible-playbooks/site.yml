@@ -1,0 +1,19 @@
+---
+- name: Validate Linux managed nodes
+  hosts: linux_nodes
+  become: true
+  gather_facts: true
+
+  tasks:
+    - name: Confirm Python is available for Ansible modules
+      ansible.builtin.command: python3 --version
+      changed_when: false
+
+    - name: Confirm become can run privileged commands
+      ansible.builtin.command: whoami
+      register: become_identity
+      changed_when: false
+
+    - name: Show become identity
+      ansible.builtin.debug:
+        var: become_identity.stdout

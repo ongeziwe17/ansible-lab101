@@ -6,8 +6,8 @@ services:
       context: ./controller
       dockerfile: Dockerfile
       args:
-        DEVOPS_USER: ${DEVOPS_USER}
-        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD}
+        DEVOPS_USER: ${DEVOPS_USER:-devops}
+        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD:-devops}
 
     image: ansible-controller:lab
     container_name: ansible-controller
@@ -20,95 +20,81 @@ services:
 
     volumes:
       - ./ansible-playbooks:/workspace
-      - controller_ssh:/home/devops/.ssh
+      - controller_ssh:/home/${DEVOPS_USER:-devops}/.ssh
 
     networks:
       - ansible_lab
 
+    depends_on:
+      lin-node1:
+        condition: service_healthy
+      lin-node2:
+        condition: service_healthy
+      lin-node3:
+        condition: service_healthy
 
-  node-lin01:
+  lin-node1:
     build:
       context: ./nodes
       dockerfile: Dockerfile
       args:
-        UBUNTU_VERSION: "20.04"
-        DEVOPS_USER: ${DEVOPS_USER}
-        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD}
+        UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
+        DEVOPS_USER: ${DEVOPS_USER:-devops}
+        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD:-devops}
 
-    image: ansible-node:20.04
-    container_name: node-lin01
-    hostname: node-lin01
-
-    ports:
-      - "2222:22"
+    image: ansible-node-lin-node1:${UBUNTU_VERSION:-22.04}
+    container_name: lin-node1
+    hostname: lin-node1
 
     networks:
       - ansible_lab
 
-    healthcheck:
+    healthcheck: &sshd_healthcheck
       test: ["CMD-SHELL", "pgrep -x sshd > /dev/null"]
       interval: 5s
       timeout: 3s
       retries: 10
 
-
-  node-lin02:
+  lin-node2:
     build:
       context: ./nodes
       dockerfile: Dockerfile
       args:
-        UBUNTU_VERSION: "22.04"
-        DEVOPS_USER: ${DEVOPS_USER}
-        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD}
+        UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
+        DEVOPS_USER: ${DEVOPS_USER:-devops}
+        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD:-devops}
 
-    image: ansible-node:22.04
-    container_name: node-lin02
-    hostname: node-lin02
-
-    ports:
-      - "2223:22"
+    image: ansible-node-lin-node2:${UBUNTU_VERSION:-22.04}
+    container_name: lin-node2
+    hostname: lin-node2
 
     networks:
       - ansible_lab
 
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep -x sshd > /dev/null"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+    healthcheck: *sshd_healthcheck
 
-
-  node-lin03:
+  lin-node3:
     build:
       context: ./nodes
       dockerfile: Dockerfile
       args:
-        UBUNTU_VERSION: "24.04"
-        DEVOPS_USER: ${DEVOPS_USER}
-        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD}
+        UBUNTU_VERSION: ${UBUNTU_VERSION:-22.04}
+        DEVOPS_USER: ${DEVOPS_USER:-devops}
+        DEVOPS_PASSWORD: ${DEVOPS_PASSWORD:-devops}
 
-    image: ansible-node:24.04
-    container_name: node-lin03
-    hostname: node-lin03
-
-    ports:
-      - "2224:22"
+    image: ansible-node-lin-node3:${UBUNTU_VERSION:-22.04}
+    container_name: lin-node3
+    hostname: lin-node3
 
     networks:
       - ansible_lab
 
-    healthcheck:
-      test: ["CMD-SHELL", "pgrep -x sshd > /dev/null"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
-
+    healthcheck: *sshd_healthcheck
 
 networks:
   ansible_lab:
     name: ansible_lab_net
     driver: bridge
-
 
 volumes:
   controller_ssh:
