@@ -5,6 +5,7 @@ ARG DEVOPS_PASSWORD
 
 ENV DEBIAN_FRONTEND=noninteractive
 ENV DEVOPS_USER=${DEVOPS_USER}
+ENV ANSIBLE_CONFIG=/workspace/ansible.cfg
 
 RUN apt-get update \
     && apt-get install -y \
@@ -51,7 +52,7 @@ COPY bin/controller-entrypoint.sh /usr/local/bin/controller-entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/controller-entrypoint.sh \
     && chmod 755 /usr/local/bin/controller-entrypoint.sh
 
-USER ${DEVOPS_USER}
 WORKDIR /workspace
 
+ENTRYPOINT ["/usr/local/bin/controller-entrypoint.sh"]
 CMD ["sleep", "infinity"]

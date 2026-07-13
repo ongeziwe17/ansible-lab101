@@ -142,7 +142,7 @@ lin-node2
 lin-node3
 ```
 
-Run an Ansible ping after SSH key bootstrap:
+Run an Ansible ping after SSH key bootstrap from inside `/workspace` on the controller:
 
 ```bash
 ansible all -m ping
@@ -153,6 +153,8 @@ Run the example playbook, which verifies Python and sudo/become behavior:
 ```bash
 ansible-playbook site.yml
 ```
+
+The controller image sets `ANSIBLE_CONFIG=/workspace/ansible.cfg` and the startup entrypoint repairs `/workspace` permissions. This keeps Ansible using the lab inventory even when the bind mount is created with permissive host-side permissions.
 
 `ansible.cfg` keeps host key checking enabled and prompts for the become password. This is intentional: the lab teaches explicit SSH trust and password-backed sudo rather than hiding those concepts with insecure defaults such as global host-key bypass or `NOPASSWD` sudo.
 
