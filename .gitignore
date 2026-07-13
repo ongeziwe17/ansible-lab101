@@ -1,2 +1,5 @@
 # ignore secret args
 **/.env
+
+# ignore test ssh auth
+**/**/ssh-auth-hosts.sh
