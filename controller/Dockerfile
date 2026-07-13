@@ -52,6 +52,7 @@ COPY bin/controller-entrypoint.sh /usr/local/bin/controller-entrypoint.sh
 RUN sed -i 's/\r$//' /usr/local/bin/controller-entrypoint.sh \
     && chmod 755 /usr/local/bin/controller-entrypoint.sh
 
+USER ${DEVOPS_USER}
 WORKDIR /workspace
 
 ENTRYPOINT ["/usr/local/bin/controller-entrypoint.sh"]
