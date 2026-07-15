@@ -1,12 +1,12 @@
 ---
-- name: Validate Linux managed nodes
-  hosts: linux_nodes
+- name: Validate Linux managed servers
+  hosts: linux_servers
   gather_facts: true
 
   tasks:
     - name: Update apt cache and install python3
       ansible.builtin.apt:
-        update_cache: yes
+        update_cache: true
         name: python3-apt
 
     - name: Confirm Python is available for Ansible modules
@@ -22,13 +22,19 @@
       ansible.builtin.debug:
         var: become_identity.stdout
 
+
+- name: Configure QA web servers
+  hosts: webservers
+  gather_facts: true
+
+  tasks:
     - name: Install NGINX package
-      apt:
+      ansible.builtin.apt:
         name: nginx
         state: present
 
     - name: Ensure NGINX is started and enabled
-      service:
+      ansible.builtin.service:
         name: nginx
         state: started
-        enabled: yes
+        enabled: true
