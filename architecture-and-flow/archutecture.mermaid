@@ -19,9 +19,9 @@ flowchart LR
         end
 
         subgraph MANAGED["Managed Nodes"]
-            NODE1["lin-node1<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
-            NODE2["lin-node2<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
-            NODE3["lin-node3<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
+            NODE1["qa-web-01<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
+            NODE2["qa-app-01<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
+            NODE3["qa-mon-01<br/>Ubuntu<br/>sshd :22<br/>Python 3<br/>sudo"]
         end
 
         ANSIBLE -->|"SSH"| NODE1

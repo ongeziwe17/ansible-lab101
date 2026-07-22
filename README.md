@@ -5,7 +5,7 @@ A lightweight local Ansible learning environment built with Docker Compose. The 
 ## Architecture
 
 * `ansible-controller` contains Ansible, Git, Python 3, an OpenSSH client, and common troubleshooting tools.
-* `lin-node1`, `lin-node2`, and `lin-node3` run `sshd`, Python 3, and `sudo`.
+* `qa-web-01`, `qa-app-01`, and `qa-mon-01` run `sshd`, Python 3, and `sudo`.
 * The Ansible project is bind-mounted from `./ansible-playbooks` into `/workspace` on the controller.
 * The controller SSH directory is stored in the `ansible_controller_ssh` Docker volume.
 * Managed nodes are disposable and keep no persistent lab state.
@@ -24,7 +24,7 @@ ansible-controller
 +-----------+-----------+-----------+
 |           |           |           |
 v           v           v
-lin-node1   lin-node2   lin-node3
+qa-web-01   qa-app-01   qa-mon-01
 ```
 
 ```mermaid
@@ -32,9 +32,9 @@ flowchart LR
     HOST["Developer Host"] --> PROJECT["./ansible-playbooks"]
     PROJECT -->|"bind mount"| WORKSPACE["ansible-controller:/workspace"]
     SSHVOL["ansible_controller_ssh volume"] --> SSHDIR["ansible-controller:~/.ssh"]
-    CONTROLLER["ansible-controller<br/>Ansible + OpenSSH client"] -->|"SSH :22"| NODE1["lin-node1<br/>sshd + Python 3 + sudo"]
-    CONTROLLER -->|"SSH :22"| NODE2["lin-node2<br/>sshd + Python 3 + sudo"]
-    CONTROLLER -->|"SSH :22"| NODE3["lin-node3<br/>sshd + Python 3 + sudo"]
+    CONTROLLER["ansible-controller<br/>Ansible + OpenSSH client"] -->|"SSH :22"| NODE1["qa-web-01<br/>sshd + Python 3 + sudo"]
+    CONTROLLER -->|"SSH :22"| NODE2["qa-app-01<br/>sshd + Python 3 + sudo"]
+    CONTROLLER -->|"SSH :22"| NODE3["qa-mon-01<br/>sshd + Python 3 + sudo"]
     WORKSPACE --- CONTROLLER
     SSHDIR --- CONTROLLER
 ```
@@ -61,9 +61,9 @@ ansible-lab101/
     ├── inventory.ini
     ├── site.yml
     ├── group_vars/all.yml
-    ├── host_vars/lin-node1.yml
-    ├── host_vars/lin-node2.yml
-    ├── host_vars/lin-node3.yml
+    ├── host_vars/qa-web-01.yml
+    ├── host_vars/qa-app-01.yml
+    ├── host_vars/qa-mon-01.yml
     └── roles/
 ```
 
@@ -95,7 +95,7 @@ Check container state:
 docker compose ps
 ```
 
-Expected services are `ansible-controller`, `lin-node1`, `lin-node2`, and `lin-node3`. The node SSH ports are not published to the host because the controller reaches them by service name on the Docker network. Each node image uses a unique local tag so parallel Compose builds do not race while exporting the same image name.
+Expected services are `ansible-controller`, `qa-web-01`, `qa-app-01`, and `qa-mon-01`. The node SSH ports are not published to the host because the controller reaches them by service name on the Docker network. Each node image uses a unique local tag so parallel Compose builds do not race while exporting the same image name.
 
 ## First-Time SSH Bootstrap
 
@@ -114,7 +114,7 @@ ssh-keygen -t ed25519 -f ~/.ssh/id_ed25519
 Copy the public key to each disposable managed node. The initial password is `DEVOPS_PASSWORD` from `.env`:
 
 ```bash
-for host in lin-node1 lin-node2 lin-node3; do
+for host in qa-web-01 qa-app-01 qa-mon-01; do
   ssh-copy-id "devops@${host}"
 done
 ```
@@ -122,7 +122,7 @@ done
 Test key authentication and accept/save host keys in the persistent `known_hosts` file:
 
 ```bash
-for host in lin-node1 lin-node2 lin-node3; do
+for host in qa-web-01 qa-app-01 qa-mon-01; do
   ssh "devops@${host}" 'python3 --version && sudo -S -v'
 done
 ```
@@ -132,15 +132,6 @@ The controller entrypoint repairs ownership and permissions on the mounted `~/.s
 ## Ansible Usage
 
 The repository includes a starter Ansible project in `ansible-playbooks/`. `group_vars/all.yml` derives `ansible_user` from the controller `DEVOPS_USER` environment variable and sets `/usr/bin/python3` as the remote interpreter.
-
-Inventory:
-
-```ini
-[linux_nodes]
-lin-node1
-lin-node2
-lin-node3
-```
 
 Run an Ansible ping after SSH key bootstrap from inside `/workspace` on the controller:
 
@@ -167,7 +158,7 @@ Persisted:
 
 Disposable:
 
-* `lin-node1`, `lin-node2`, and `lin-node3` containers
+* `qa-web-01`, `qa-app-01`, and `qa-mon-01` containers
 * Managed-node SSH host keys and authorized keys
 
 Stop/start containers without deleting them:
@@ -227,7 +218,7 @@ docker compose build
 Verify controller-to-node DNS from the controller:
 
 ```bash
-for host in lin-node1 lin-node2 lin-node3; do getent hosts "$host"; done
+for host in qa-web-01 qa-app-01 qa-mon-01; do getent hosts "$host"; done
 ```
 
 Run a one-off password-based Ansible ping before SSH key bootstrap:

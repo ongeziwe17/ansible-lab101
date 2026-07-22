@@ -3,3 +3,6 @@
 
 # ignore test ssh auth
 **/**/ssh-auth-hosts.sh
+
+# ignore vscode workspaces configurations
+.vscode

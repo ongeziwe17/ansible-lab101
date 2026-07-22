@@ -2,22 +2,22 @@ sequenceDiagram
     actor DevOps as DevOps Engineer
     participant Controller as ansible-controller
     participant Inventory as Inventory
-    participant Node1 as lin-node1
-    participant Node2 as lin-node2
-    participant Node3 as lin-node3
+    participant Node1 as qa-web-01
+    participant Node2 as qa-app-01
+    participant Node3 as qa-mon-01
 
     DevOps->>Controller: ansible-playbook -i inventory.ini site.yml
 
     Controller->>Inventory: Read managed hosts
-    Inventory-->>Controller: lin-node1, lin-node2, lin-node3
+    Inventory-->>Controller: qa-web-01, qa-app-01, qa-mon-01
 
-    par Connect to lin-node1
+    par Connect to qa-web-01
         Controller->>Node1: SSH as devops
         Node1-->>Controller: SSH authenticated
-    and Connect to lin-node2
+    and Connect to qa-app-01
         Controller->>Node2: SSH as devops
         Node2-->>Controller: SSH authenticated
-    and Connect to lin-node3
+    and Connect to qa-mon-01
         Controller->>Node3: SSH as devops
         Node3-->>Controller: SSH authenticated
     end
