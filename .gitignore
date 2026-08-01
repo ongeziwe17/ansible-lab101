@@ -6,3 +6,8 @@
 
 # ignore vscode workspaces configurations
 .vscode
+
+# ignore python virtual environment config files
+.venv/
+__pycache__/
+*.py[cod]
