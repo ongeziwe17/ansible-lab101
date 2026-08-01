@@ -14,15 +14,16 @@ permissions:
 jobs:
   yaml:
     name: PR Validation / YAML
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.14"
           cache: pip
+          cache-dependency-path: requirements-ci.txt
       - name: Install pinned validation dependencies
         run: python -m pip install --requirement requirements-ci.txt
       - name: Lint YAML
@@ -33,12 +34,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: "3.12"
           cache: pip
+          cache-dependency-path: requirements-ci.txt
       - name: Install pinned validation dependencies
         run: python -m pip install --requirement requirements-ci.txt
       - name: Lint Ansible content
@@ -61,10 +63,10 @@ jobs:
 
   repository:
     name: PR Validation / Repository
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
       - name: Validate Compose configuration only
         run: docker compose -f compose.yml config --quiet
       - name: Lint all shell scripts
@@ -75,7 +77,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - name: Check out full history for secret scanning
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Scan repository with Gitleaks
@@ -87,7 +89,7 @@ jobs:
     name: PR Validation / Required
     if: ${{ always() }}
     needs: [yaml, ansible, repository, security]
-    runs-on: ubuntu-26.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Require every validation job
         env:
